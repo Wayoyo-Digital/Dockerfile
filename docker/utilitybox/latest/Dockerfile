@@ -1,4 +1,29 @@
+# Build & Compile
+FROM alpine:latest AS builder
+
+RUN apk add --no-cache \
+    bash \
+    curl \
+    bash \
+    wget \
+    build-base \
+    musl-dev \
+    openssl-dev \
+    pkgconfig \
+    libffi-dev \
+    && mkdir -p \
+        /download/sbin \
+        /download/usr/local/bin \
+    # layout scripts
+    && wget -O /tmp/layout-install.sh https://raw.githubusercontent.com/Wayoyo-Digital/Docker-BaseLayout/refs/heads/main/install.sh \
+    && sh /tmp/layout-install.sh /download \
+    && "/download/usr/local/bin/cli-macchina" \
+    && curl -s https://ohmyposh.dev/install.sh | bash -s -- -d /download/usr/local/bin
+
 FROM alpine:latest
+
+COPY --from=builder /download /layout
+COPY --from=builder /usr/local/bin/macchina /layout/usr/local/bin/macchina
 
 RUN apk add --no-cache \
         ca-certificates \
@@ -17,12 +42,6 @@ RUN apk add --no-cache \
         rsync \
         git \
         gnupg \
-    && mkdir -p \
-        /layout/sbin \
-        /layout/usr/local/bin \
-    # layout scripts
-    && wget -O /tmp/layout-install.sh https://raw.githubusercontent.com/Wayoyo-Digital/Docker-BaseLayout/refs/heads/main/install.sh \
-    && sh /tmp/layout-install.sh /layout \
     # Install gosu
     && wget -O "/layout/sbin/gosu" "https://github.com/tianon/gosu/releases/download/1.17/gosu-amd64" \
     && wget -O "/tmp/gosu.asc" "https://github.com/tianon/gosu/releases/download/1.17/gosu-amd64.asc" \
